@@ -1,0 +1,145 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         String // STUDENT | TEACHER
+  department   String?
+  groupId      Int?
+  group        Group?   @relation(fields: [groupId], references: [id])
+
+  lessons     Lesson[]
+  assignments Assignment[]
+  submissions Submission[]
+  files       File[]
+  chats       ChatMember[]
+  messages    Message[]
+}
+
+model Group {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  course      Int
+  faculty     String
+  students    User[]
+  lessons     Lesson[]
+  assignments Assignment[]
+  chats       Chat[]
+}
+
+model Subject {
+  id          Int          @id @default(autoincrement())
+  name        String
+  lessons     Lesson[]
+  assignments Assignment[]
+}
+
+model Lesson {
+  id         Int     @id @default(autoincrement())
+  groupId    Int
+  subjectId  Int
+  teacherId  Int
+  dayOfWeek  Int // 1 = Пн … 6 = Сб
+  pairNumber Int // 1…7, время — в src/lib/week.ts
+  weekType   String // ALL (каждую неделю) | UPPER (верхняя) | LOWER (нижняя)
+  type       String // LECTURE | PRACTICE | LAB
+  room       String
+  subgroup   Int?
+  group      Group   @relation(fields: [groupId], references: [id])
+  subject    Subject @relation(fields: [subjectId], references: [id])
+  teacher    User    @relation(fields: [teacherId], references: [id])
+}
+
+model Assignment {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  deadline    DateTime
+  createdAt   DateTime     @default(now())
+  subjectId   Int
+  groupId     Int
+  teacherId   Int
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  group       Group        @relation(fields: [groupId], references: [id])
+  teacher     User         @relation(fields: [teacherId], references: [id])
+  files       File[]
+  submissions Submission[]
+}
+
+model Submission {
+  id             Int        @id @default(autoincrement())
+  assignmentId   Int
+  studentId      Int
+  attempt        Int
+  comment        String     @default("")
+  status         String // SUBMITTED | RETURNED | ACCEPTED
+  grade          String?
+  teacherComment String?
+  submittedAt    DateTime   @default(now())
+  reviewedAt     DateTime?
+  assignment     Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student        User       @relation(fields: [studentId], references: [id])
+  files          File[]
+}
+
+// Файл принадлежит ровно одному владельцу: заданию, сдаче или сообщению
+// (или пока никому — загружен, но ещё не прикреплён к сообщению).
+model File {
+  id           Int         @id @default(autoincrement())
+  originalName String
+  storedName   String      @unique
+  mime         String
+  size         Int
+  createdAt    DateTime    @default(now())
+  uploaderId   Int
+  uploader     User        @relation(fields: [uploaderId], references: [id])
+  assignmentId Int?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  submissionId Int?
+  submission   Submission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  messageId    Int?
+  message      Message?    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id       Int          @id @default(autoincrement())
+  type     String // DIRECT | GROUP
+  title    String?
+  groupId  Int?
+  group    Group?       @relation(fields: [groupId], references: [id])
+  members  ChatMember[]
+  messages Message[]
+}
+
+model ChatMember {
+  chatId            Int
+  userId            Int
+  lastReadMessageId Int  @default(0)
+  chat              Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user              User @relation(fields: [userId], references: [id])
+
+  @@id([chatId, userId])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  Int
+  text      String
+  createdAt DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id])
+  files     File[]
+
+  @@index([chatId, id])
+}

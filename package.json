@@ -1,0 +1,16 @@
+{
+  "name": "lk-nngasu",
+  "private": true,
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "setup": "npm install && npm run db:seed -w server",
+    "dev": "concurrently -n server,client -c yellow,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
+    "start": "npm run build -w client && npm run start -w server",
+    "seed": "npm run db:seed -w server",
+    "test": "node scripts/smoke.mjs",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-ink antialiased;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none transition
+      placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20;
+  }
+  /* Мелкая подпись КАПСОМ с разрядкой — как в меню сайта ННГАСУ */
+  .caps {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted;
+  }
+}
